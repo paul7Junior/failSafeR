@@ -1,3 +1,76 @@
+failSafer.guru
+
+
+It started with the concept of entropy that I learned in machine learning courses. This is one of the several metric we use to measure similarity.
+I new as well that physic was using the same word. Entropy, the second
+
+Fail is limitless and omnipresent.
+We can see example of fails everywhere. Day to day failures, missing something, up to the fail of an airplane that crashes, or fail your life.
+There is a wide variety of fails.
+
+L’échec nécessite deux éléments : un dessein et un aboutissement qui ne satisfait pas les attentes du point de départ. L’absence du premier élément n’implique pas celle de l’échec.
+
+
+
+Pattern: Usually a fail is applied to something. A project, an object (airplaine, ), one's person action, human (a state like greece) we could say that all thoses are systems.
+
+
+How a system (an airplaine, a project) can collapse? How a state can collapses? (Greece) How a system that human build can collapses?
+
+
+All those concepts in some way are fails/failures. Is there a stretegy of failure? What are the common pattern of failures?
+failure theory
+Tout ces concepts tourne autour du fails/failures
+
+
+-Risque,
+-Biais,
+-Entropie, le bordel , quantifier le bordel. How can one's mesure mess, disorder
+Mathieu cherche desesperement a mettre de l'ordre dans le chaos qui l'entoure.
+
+
+-system failure (system Redundancy (engineering)), fail fast
+-systems designs
+-second law of thermodynamic
+-Software entropy
+-principe de parcimonie
+-hazard analysis
+-risk management (decrease the probability of failure or uncertainty)
+
+Aspect exemple monde reel
+-un repertoire des fails reel: la resistance du reel (-superfail france culture, parce que c'est pas si facile de reussir a echoue)
+  -Danger dans le ciel
+  -blue scren of death
+  -uber
+  -la betise, l'echec de l'intelligence.
+  -Si on a pas rater au moins trois start up dans la silicon valley, on est pas pris au serieux.
+  -Why cutting cost is expensive? Boeing 737 MAX.
+
+
+Aspect Soft:
+-Biais
+-Philosophie de l'echec. Les modalite de l'echec, les facteurs d'echec. La resistance du reel.
+-Droit. GDPR, Data privacy (NYT data privacy project)
+-Machine learning desiderata
+-
+
+Aspect pratique coding:
+-R package failSafeR
+-R inferno (because I need to master R) 
+
+
+Aspect pratique monde reel:
+-Value at risk
+
+HOW TO SOLVE THIS?
+Aspect Statistique pure:
+-Mouvement brownien.
+-information de fisher
+-entropie
+-perceptron
+-Self Organizing Map (competitive learning)
+-Ensemble learning (http://www.scholarpedia.org/article/Ensemble_learning)
+
 # failSafeR
 
 
@@ -120,13 +193,17 @@ do whatever you want
  It means that it wont work for all the other possibilities.
  In other words, there is millions of possibilities to mess up and only one way to have it working.
  
- Ther eis clearly an imbalanced. it is the same in internet securities. It is very hard to secure a system
+ There is clearly an imbalanced. it is the same in internet securities. It is very hard to secure a system
   because there is thousands way to get in that we didnot though about.
   
   The system is not foolproof.
   
-The idea behind fail safer is to grab the path we know already work and thus being able to pinpoint when the system
-try a path that it has never seen or any unusual path.
+The idea behind fail safer is to grab the path we know already worked and thus being able to pinpoint when the system
+try an unusual path or a path that it has never seen before
+
+
+
+
 
 
 ## DATA FLOW AND CONTEXT
@@ -183,6 +260,9 @@ Fit a beta distribution.
 ## Length metaData
 
 
+
+
+l'interdependance entre parametres. Mis en avant par la clusterisation.
 
 
 ## BASICS OF THE SYSTEM
@@ -281,3 +361,12 @@ https://www.statworx.com/de/blog/master-r-shiny-one-trick-to-build-maintainable-
 
 # 
 https://www.youtube.com/watch?v=DV44pB9fpf8&list=LLxCFwDyjOTXOfOIOTaVv1tw&index=2
+
+
+# medium boeing fail why cutting cost is expensive?
+
+# applying failsafer to shiny package, 
+
+
+
+

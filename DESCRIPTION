@@ -10,7 +10,7 @@ Description: failSafeR helps debug code by highlighting dependencies within and 
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
-Imports: 
+Depends: 
     rlang,
     pryr,
     tibble,

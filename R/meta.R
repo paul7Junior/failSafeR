@@ -4,7 +4,7 @@ class(NULL_mc) = 'NULL'
 #' Object that hold all the meta_collection
 meta_master_env = function() {
   this_env = env()
-  mc_register = read_json('./.failSafer/mc_register.json')
+  mc_register = read_json('./mc_register.json')
 
   this = list(
     this_env = this_env,
@@ -21,9 +21,9 @@ meta_master_env = function() {
       assign(.n, .c, this_env)
     },
     get_collection = function(.n = NULL) {
-      if(is.null(.n)) {
+      if(is.null(.n)) {# if called wihtout parameter return all the collections
         Filter(function(x) 'meta_collection' %in% x, lapply(this_env, class))
-      } else {
+      } else {# if called with a string paramater return the collection specified as a parameter.
         get(.n, this_env)
       }
     },
@@ -43,6 +43,14 @@ meta_master_env = function() {
   return(this)
 }
 
+load_master = function(path = getwd()) {
+  assign(readRDS(file.path(path, 'master.RDS')))
+}
+
+save_master = function(master, path = getwd()) {
+  saveRDS(.master, file.path(path, 'master.RDS'))
+}
+
 get_collection = function(fun) {
   .master$get_collection(fun)
 }
@@ -52,9 +60,32 @@ get_raw = function(fun) {
 }
 
 ## constructor class meta_collection
-
-#' @param .f A function to be monitor
+#' constructor for object meta_collection
+#'
+#' @description
+#'
+#'The main purpose of this class it to handle a meta collection.
+#'
+#'A meta collection is composed of
+#' function attribute: the actual code of the function
+#' raw attribute: a tibble that stores the environment of the function
+#' meta: a tibble that stores the metadata of the raw attribute
+#'
+#'
+#' @param f function to monitor
 #' @export
+#'
+#'
+#'
+#'
+#' @examples
+#'
+#' #create an object meta_collection
+#' collec = meta_collection(f)
+#'
+#'
+#'
+
 meta_collection = function(f) {
 
   this_env = environment()
@@ -75,6 +106,12 @@ meta_collection = function(f) {
     },
     get = function(attr) {
       return(get(attr, this_env))
+    },
+    getFunction = function() {
+      return(get('func', this_env))
+    },
+    getRaw = function() {
+      return(get('raw', this_env))
     },
     set = function(value) {
       return(assign('func', value, this_env))
@@ -112,6 +149,22 @@ show_raw = function(.f) {
 }
 
 
+mc_register = '/Users/paulhechinger/08SPARK/failSafeR/mc_register.json'
+
+
+#'Get the mc_register, go through it to register the different sources, functions
+#'
+#'
+#'
+init_monitoring = function(mc_register) {
+  register = fromJSON(mc_register)
+  sources = register$source
+
+  for(path in sources) {
+    collection = meta_collection(path)
+    .master$add_collection(path, collection)
+  }
+}
 
 #' Init a meta collection
 #'
@@ -131,7 +184,6 @@ show_raw = function(.f) {
 
 #' Add a patch to a function to be able to track it and update the mc_register
 #'
-#'
 #' @param .func a function
 #' @return a meta_collection object. The meta_collection associated with the function passed as argument
 #'
@@ -146,7 +198,7 @@ monitor = function(.func) {
   if(startsWith(environmentName(env), 'package')) {
 
   } else {
-    # TODO take into account the case where the meta colleciton already exist,
+    # TODO take into account the case where the meta collecton already exist,
     c = meta_collection(.func)
     e = exprs(
       #This bit a code has been add by the failSafeR package to be able to track this function,
@@ -168,30 +220,19 @@ monitor = function(.func) {
     c$set(c_cctv)
   }
 
-  .master$add_collection(.mc_name, c)
-  assign(.mc_name, c_cctv, env)
+  .master$add_collection(.mc_name, c) # add the collection to the master
+  assign(.mc_name, c_cctv, env) # assign th new created function in the initial environment
 
   return(c)
 }
 
-
-
-# g = function(name) {
-#   print(name)
-#   name = 'f'
-#
-#   on.exit({
-#     print(substitute(name))
-#     print(name)
-#   })
-# }
 
 #' @.fun result of monitor
 try_catch_wrapper = function(.fun, ...) {
   name = as.character(enexpr(.fun))
 
   function(...) {
-    tryCatchLog(
+    # tryCatchLog(
       withCallingHandlers({
         # do.call(.fun(), list(...))
         do.call(.fun, list(...))
@@ -212,7 +253,7 @@ try_catch_wrapper = function(.fun, ...) {
         c$set_status(0)
         # printOutput(fun[[1]], currentContent, metaTable)
       })
-    )
+    # )
   }
 }
 
@@ -265,17 +306,20 @@ format_current_env = function(.e, .s) {
 # }
 
 
-
+assign_variable = function(env) {
+  map(names(env), function(x) {assign(x, env[[x]], pos = 1)})
+}
 
 
 #### META FACTORY
 
 #' @param raw data that lives in raw attritute of a meta_collection
-#' @param class String. The class of data to use (numeric, character, data.frame, ...)
+#' @param class String. The class of data to use (numeric, character, data.frame, ...) If NULL the dont filter any data, mainly to get the meta class
 #' @param meta_operation A function. Operation to apply on those meta
 #'
 #' The raw data as stored in the object raw in a meta collection
 meta_factory = function(raw, target_class, meta_operation) {
+  on.exit(mf <<- as.list(current_env()))
   tibble(variable = colnames(raw)[colnames(raw) != 'status'])  %>%
     mutate(meta =
              purrr::map(variable,
@@ -304,14 +348,18 @@ extract_meta_factory = function(meta_factory) {
 # a = meta_factory(d, target_class = 'character', meta_operation = meta_character_distinct) # numeric sign
 #
 
-a = meta_factory(d, NULL, meta_operation = meta_length) # numeric sign
+# a = meta_factory(d, NULL, meta_operation = meta_length) # numeric sign
 
 filter_class = function(d, column, .class) {
   if(is.null(.class)) return(d)
-  index = which(sapply(d[[column]], class) %in% .class)
+  index1 = which(sapply(d[[column]], class) %in% .class)
+  if(.class != 'data.frame') {
+    index2 = which(sapply(d[[column]], length) == 1)
+    index1 = intersect(index1, index2)
+  }
 
-  if(length(index) != 0) {
-    d[index,] %>%
+  if(length(index1) != 0) {
+    d[index1,] %>%
       select(!!sym(column), status)
   } else {
     return(NULL)
@@ -349,9 +397,9 @@ meta_length = function(data) {
   data %>% rowwise() %>% mutate_at(1, function(x) length(x)) %>% ungroup()
 }
 
-meta_dim = function(data) {
+meta_nrow = function(data) {
   if(is.null(data)) return(tibble())
-  data %>% rowwise() %>% mutate_at(1, function(x) dim(x)) %>% ungroup()
+  data %>% rowwise() %>% mutate_at(1, function(x) nrow(x)) %>% ungroup()
   # data %>% rowwise() %>% mutate_at(1, function(x) if(is.null(dim(x))) 'NA_MC' else dim(x)) %>% ungroup()
 }
 
@@ -387,16 +435,18 @@ pimp_my_mind = function(.fun) {
   print(rule(center = " * DEBUG META COLLECTION * "))
 
   mc = .master$get_collection(.fun)
-  d = mc$get('raw')
+  raw = mc$getRaw()
 
-  column = colnames(d)[colnames(d) != 'status']
+  last_working = raw %>% filter(status == 1) %>% head(1)
 
-  arg_class = meta_factory(d, NULL, meta_operation = meta_class) %>% meta_proba() %>% rename('class' = 'meta')
-  arg_numeric_sign = meta_factory(d, 'numeric', meta_operation = meta_numeric_sign) %>% meta_proba() %>% rename('numeric_sign' = 'meta')
-  arg_length = meta_factory(d, NULL, meta_operation = meta_length) %>% meta_proba() %>% rename('length' = 'meta')
-  arg_dim = meta_factory(d, 'data.frame', meta_operation = meta_dim) %>% meta_proba() %>% rename('dim' = 'meta')
-  arg_character_distinct = meta_factory(d, 'character', meta_operation = meta_character_distinct) %>% meta_proba() %>% rename('character_distinct' = 'meta')
-  meta_var = reduce(list(arg_class, arg_length, arg_dim, arg_numeric_sign, arg_character_distinct), full_join, by = 'variable')
+  column = colnames(raw)[colnames(raw) != 'status']
+
+  arg_class = meta_factory(raw, NULL, meta_operation = meta_class) %>% meta_proba() %>% rename('class' = 'meta')
+  arg_numeric_sign = meta_factory(raw, 'numeric', meta_operation = meta_numeric_sign) %>% meta_proba() %>% rename('numeric_sign' = 'meta')
+  arg_length = meta_factory(raw, NULL, meta_operation = meta_length) %>% meta_proba() %>% rename('length' = 'meta')
+  arg_nrow = meta_factory(raw, 'data.frame', meta_operation = meta_nrow) %>% meta_proba() %>% rename('nrow' = 'meta')
+  arg_character_distinct = meta_factory(raw, 'character', meta_operation = meta_character_distinct) %>% meta_proba() %>% rename('character_distinct' = 'meta')
+  meta_var = reduce(list(arg_class, arg_length, arg_nrow, arg_numeric_sign, arg_character_distinct), full_join, by = 'variable')
 
   current = mc$get_current_env()
 
@@ -409,12 +459,11 @@ pimp_my_mind = function(.fun) {
              ifelse(x>0, 'Positive', 'Negative')
            }),
            character_distinct = lapply(value, function(x) if(is.character(x)) x else NULL)) %>%
+    mutate_all(unname) %>%
     select(-value)
 
   for(var in meta_var$variable) {
     if(!(current %>% has_name(var))) next
-
-    # cat_input(var, current[[var]], green)
 
     meta_var_temp = meta_var %>% filter(variable == var)
     meta_current_temp = meta_current %>% filter(variable == var) %>% unlist()
@@ -423,7 +472,15 @@ pimp_my_mind = function(.fun) {
       Filter(Negate(is_empty), .) %>%
       extract(-1)
 
-    cat_input(var, current[[var]], green)
+    for(meta in names(l)) {
+      level = get_level(l[[meta]], 1)
+      var_status = all(meta_current_temp[meta] %in% level)
+    }
+
+    var_color = if(var_status) crayon::green else crayon::red
+
+    cat_input(var, current[[var]], var_color)
+    cat_input(var, unlist(last_working[[var]]), silver)
 
     for(meta in names(l)) {
       level = get_level(l[[meta]], 1)
@@ -438,9 +495,10 @@ pimp_my_mind = function(.fun) {
   }
 }
 
-
+#'
+#'
 get_level = function(data, .level) {
- data %>% filter(level == .level) %>% extract2(1) %>% unique()
+  data %>% filter(level == .level) %>% extract2(1) %>% unique()
 }
 
 print.fs = function(data, shift = 10, ...) {
@@ -542,14 +600,20 @@ cat_mc = function(input, ...) {
   UseMethod('cat_mc', input)
 }
 
-cat_input = function(name, input, color_f) {
+
+# cat_input(var, current[[var]], green)
+
+
+cat_input = function(name, input, color_f, sym = 'square') {
   if(is.data.frame(input)) {
-    cat(bold('Input \n'), name, '=')
+    cat(color_f(symbol[[sym]]), name, '=', '\n')
+    # cat(bold('Input \n'), name, '=')
     print(head(input))
+
   } else if(is.character(input)) {
-    cat(color_f(symbol$square), name, '=', paste0('"', input, '"'), '\n')
+    cat(color_f(symbol[[sym]]), name, '=', paste0('"', input, '"'), '\n')
   } else {
-    cat(color_f(symbol$square, name), '=', input, '\n')
+    cat(color_f(symbol[[sym]]), name, '=', input, '\n')
   }
 }
 
@@ -588,10 +652,69 @@ pimp_contingency = function(data) {
   })
 }
 
-#
-# atomic_output = function() {
-#
+
+####### monitor raw scripts
+path = "/Users/paulhechinger/08SPARK/failSafeR/script_test.R"
+
+source = function(file, ...) {
+
+  fileName = path
+  conn = file(fileName, open="r")
+  linn = readLines(conn)
+
+  res = c('withCallingHandlers({',
+          linn,
+          "},finally = {",
+  paste0(".c = .master$get_collection('", path,"')"),
+  ".c$append(current_env())",
+  "",
+          "print('sss')})")
+
+  a = paste(res, collapse = '\n')
+  a = parse_exprs(a)
+
+  source(exprs = a)
+
+    base::source(exprs = )
+
+  close(conn)
+
+}
+
+
+# f = function(x) {
+#   print(g(x))
 # }
+#
+# g = function(x) {
+#   print('dd')
+#   h(x)
+# }
+#
+# h = function(x) {
+#   sqrt(x)
+# }
+
+
+# tryCatch({
+#   f(4)
+# }, error = function(e) {
+#   print(e)
+# })
+
+# withCallingHandlers(f('32'), error=function(e) print(e))
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

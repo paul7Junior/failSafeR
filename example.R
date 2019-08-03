@@ -27,7 +27,7 @@ f = function(x) {
 m = monitor(f)
 
 # from here, the function f has been changed in its living environment and start to store values, but wouldnot be able to store the correct
-# status as we need to wrap the function in a try to be able to subscribe to a raised error event.
+# status as we need to wrap the function in a try to be able to subscribes to raised error event.
 
 f(2)
 
@@ -35,7 +35,6 @@ f(2)
 # This is where we are able to track the status of the output 1 for ok and 0 for raised an error.
 
 f_ = try_catch_wrapper(f)
-
 
 f_(3);f_(5);f_(99);f_('qwerty')
 
@@ -49,7 +48,54 @@ collec$get('raw')
 
 
 
-trace(f, exit=quote(browser()))
+
+
+### try to get back the go to function feature
+
+
+f = function(x) {
+  print(g(x))
+}
+
+g = function(x) {
+  print('dd')
+  h(x)
+}
+
+h = function(x) {
+  a = sqrt(3)
+  b = log(x)
+  c = 'fff'
+}
+
+m = monitor(f)
+
+# from here, the function f has been changed in its living environment and start to store values, but wouldnot be able to store the correct
+# status as we need to wrap the function in a try to be able to subscribes to raised error event.
+
+f(2)
+
+# wrap it in the tryCatchMeta
+# This is where we are able to track the status of the output 1 for ok and 0 for raised an error.
+
+f_ = try_catch_wrapper(f)
+
+f_(3);f_(5);f_(99);f_('qwerty')
+
+
+
+# monitor h
+
+m = monitor(h)
+
+h_ = try_catch_wrapper(h)
+
+
+h_(3);h_(6);h_(19)
+h_('fidj')
+
+
+# trace(f, exit=quote(browser()))
 
 
 
@@ -60,21 +106,24 @@ trace(f, exit=quote(browser()))
 # for example, x is function of the dim of a dataframe
 # try to access values that are not defined.
 
+# There is an implicit constraint: x must be lower than the number of row, the system is going to learn that constraint.
+
 #x>0, y>0, dim(z) = 0,0
 
 g = function(x, y, z) {
   if(x<0) stop('x should be positive')
   if(y<0) stop('y should be positive')
-
 }
 
 
 j = function(x, y, data) {
   row = round(sqrt(x))
   column = round(log(y))
-  message('Trying access row ', row, ' for a data.frame of dim ', nrow(data), ' ', length(data))
+  print(paste0('Trying access row ', row, ' for a data.frame of dim ', nrow(data), ' ', length(data)))
 
   data = data[row,]
+
+  random_number = rnorm(round(data[1,1]))
   return(data)
 }
 
@@ -85,15 +134,27 @@ m = monitor(j)
 
 m_ = try_catch_wrapper(j)
 
-## run the function a couple of times
-for(i in seq(1, 2500, 100)) {
-  max_row = round(runif(1) * 150)
+
+data = iris
+m_(1,5, data)
+m_(39440,5, data)
+
+
+for(i in sample(100, size = 20)) {
+  print(i)
+  # max_row = round(runif(1) * 150)
   data = iris[1:max_row,]
-  m_(i,5, data)
+  data = iris
+  try(m_(i,5, data))
 }
 
-
-m_(50000,5, data)
+## run the function a couple of times
+for(i in seq(1, 2500, 100)) {
+  print(i)
+  max_row = round(runif(1) * 150)
+  data = iris[1:max_row,]
+  try(m_(i,5, data))
+}
 
 
 x = sample(10)
